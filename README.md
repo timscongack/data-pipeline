@@ -119,52 +119,7 @@ This guide outlines a comprehensive 5-month roadmap for building a local data pi
 
 ---
 
-## Process Diagram
+## Architecture Diagram
 
-```mermaid
-flowchart TD
-    subgraph API & Ingestion
-        A[Mock API Data Generator<br/>(Python App)]
-        B[Python Lambda Function<br/>(Local via Localstack)]
-    end
+<img width="760" alt="image" src="https://github.com/user-attachments/assets/17a4e790-f844-4efa-95fc-c07de9f5cc03" />
 
-    subgraph AWS Emulation (Localstack)
-        C[S3 Bucket<br/>(Parquet Files)]
-    end
-
-    subgraph Data Layers
-        D[PostgreSQL Raw Layer<br/>(Ingested Parquet Data)]
-        E[Silver Layer<br/>(Normalized Tables)]
-        F[DuckDB Gold Layer<br/>(Analytics)]
-    end
-
-    subgraph Networking & Infra
-        G[VPC, Subnets & Routing]
-        H[Terraform/Terragrunt Configurations<br/>(Network & AWS Resources)]
-    end
-
-    subgraph Orchestration & CI/CD
-        I[Docker / Docker Compose]
-        J[CI/CD Pipeline<br/>(GitHub Actions/Jenkins)]
-    end
-
-    subgraph Dashboarding
-        K[Streamlit Dashboard]
-    end
-
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-    E --> F
-    F --> K
-
-    G --> H
-    H --> C
-    H --> B
-
-    I --> H
-    I --> D
-    I --> F
-    I --> K
-    J --> I
