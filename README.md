@@ -1,5 +1,175 @@
 # Data Pipeline Project
 
+## Overview
+This project implements a high-performance data pipeline for processing and storing event data using Apache Iceberg tables. The pipeline consists of a mock data generator and a Lambda-based processor that handles event ingestion and storage.
+
+## Architecture
+
+### Components
+1. **Mock Data Generator**
+   - Generates realistic event data with various attributes
+   - Supports high-throughput event generation
+   - Includes session, user agent, location, and engagement metrics
+
+2. **Lambda Processor**
+   - Processes incoming events in real-time
+   - Flattens nested event structures
+   - Optimized for high throughput (100+ events/second)
+   - Uses Apache Iceberg for efficient data storage
+
+3. **Storage Layer**
+   - Apache Iceberg tables for efficient data management
+   - Supports schema evolution and time travel
+   - Optimized for analytical queries
+   - Partitioned by event date for efficient querying
+
+## Key Design Decisions
+
+### 1. Storage Choice: Apache Iceberg
+- **Why Iceberg?**
+  - Schema evolution support
+  - Time travel capabilities
+  - Efficient partitioning and compaction
+  - Better query performance for analytics
+  - ACID transactions
+  - Reduced storage costs compared to raw S3
+
+### 2. Performance Optimizations
+- **Event Processing**
+  - Concurrent processing with ThreadPoolExecutor
+  - Memory-efficient data structures
+  - Batch processing capabilities
+  - Compression for reduced storage footprint
+
+- **Storage Optimizations**
+  - Partitioning by event date
+  - Automatic compaction
+  - Columnar storage format
+  - Efficient metadata management
+
+### 3. Data Model
+- **Event Structure**
+  - Flattened schema for efficient querying
+  - Nested data preserved in _doc field
+  - Standardized event types
+  - Rich metadata for analytics
+
+## Implementation Notes
+
+### Performance Requirements
+- Process 100+ events per second
+- Support concurrent processing
+- Memory efficient (max 50MB per 100 events)
+- Compression ratio of at least 2:1
+
+### Testing Strategy
+- Unit tests for all components
+- Performance benchmarks
+- Memory usage monitoring
+- Compression ratio validation
+- Concurrent processing tests
+
+## Setup Instructions
+
+### Prerequisites
+- Python 3.9+
+- Docker
+- Localstack
+- AWS CLI configured for Localstack
+
+### Environment Setup
+1. Create and activate virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### Localstack Setup
+1. Start Localstack:
+   ```bash
+   docker-compose -f docker/localstack/docker-compose.yml up -d
+   ```
+
+2. Verify Localstack:
+   ```bash
+   aws --endpoint-url=http://localhost:4566 s3 ls
+   ```
+
+### Iceberg Setup
+1. Create Iceberg catalog:
+   ```bash
+   aws --endpoint-url=http://localhost:4566 glue create-database --database-name events_db
+   ```
+
+2. Initialize Iceberg tables:
+   ```bash
+   python scripts/init_iceberg_tables.py
+   ```
+
+## Running the Pipeline
+
+### Start Mock Generator
+```bash
+python apps/mock_generator/main.py
+```
+
+### Monitor Processing
+```bash
+python scripts/monitor_processing.py
+```
+
+## Development
+
+### Testing
+```bash
+python -m pytest
+```
+
+## Performance Monitoring
+
+### Metrics
+- Events processed per second
+- Memory usage
+- Compression ratios
+- Processing latency
+
+### Monitoring Tools
+- Localstack CloudWatch metrics
+- Custom performance dashboards
+- Iceberg table statistics
+
+## Troubleshooting
+
+### Common Issues
+1. Localstack not starting
+   - Check Docker status
+   - Verify port availability
+   - Check Localstack logs
+
+2. Iceberg table issues
+   - Verify catalog configuration
+   - Check table metadata
+   - Monitor compaction status
+
+3. Performance issues
+   - Check memory usage
+   - Monitor concurrent processing
+   - Verify compression ratios
+
+## Future Improvements
+1. Implement CDC (Change Data Capture)
+2. Add real-time analytics capabilities
+3. Enhance monitoring and alerting
+4. Implement data quality checks
+5. Add support for more event types
+
+# Data Pipeline Project
+
 A comprehensive data pipeline solution using AWS services (emulated with Localstack), Terraform, and Python.
 
 ## Project Structure
@@ -7,7 +177,7 @@ A comprehensive data pipeline solution using AWS services (emulated with Localst
 ```
 .
 ├── README.md
-├── infrastructure/           # Terraform and Terragrunt configurations
+├── infrastructure/          # Terraform and Terragrunt configurations
 │   ├── modules/             # Reusable Terraform modules
 │   │   ├── networking/      # VPC, subnets, routing tables
 │   │   ├── storage/         # S3 buckets

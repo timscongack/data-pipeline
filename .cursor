@@ -80,4 +80,5 @@
 # Coding Guidelines
 ## Python
 - Use snake_case for variable and function names and just in general
-- detailed docstrings for functions, terse code comment on the same line after code all lowercase no space after #.
+- Functions have nicely outlined docsgtring with proper captialization and punctutation and include the function outputs. 
+- all other line items are lowercase and no spacing between #comment <- like that
