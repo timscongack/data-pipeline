@@ -10,7 +10,7 @@
 
 2. Set up Python virtual environment and install dependencies:
    ```bash
-   python -m venv venv
+   python3 -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -r requirements.txt
    ```
@@ -46,12 +46,100 @@
    terragrunt apply -auto-approve
    ```
 
-7. Run the mock generator:
+7. Run the test suite:
    ```bash
+   # Make sure your virtual environment is activated
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+   # Run all tests
+   python -m pytest
+
+   # Run specific test categories
+   python -m pytest tests/unit -v      # Unit tests only
+   python -m pytest tests/integration   # Integration tests only
+   python -m pytest -m benchmark       # Performance benchmarks only
+   ```
+
+8. Start the mock event generator:
+   ```bash
+   # Make sure your virtual environment is activated
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+   # Make the script executable
+   chmod +x scripts/run_mock_generator.sh
+   
+   # Run the generator
    ./scripts/run_mock_generator.sh
    ```
 
+   The mock generator will start producing events and logs will be written to `logs/mock_generator.log`
+
 For detailed instructions and troubleshooting, see the sections below.
+
+## Project Structure
+- `infrastructure/`: Terraform and Terragrunt configurations
+- `apps/`: Python applications
+  - `lambda_processor/`: Lambda function for processing events
+  - `mock_generator/`: Mock event generator
+- `docker/`: Docker configurations
+- `scripts/`: Utility scripts
+- `tests/`: Test suite
+  - `unit/`: Unit tests
+  - `integration/`: Integration tests
+  - `performance/`: Performance tests
+
+## Development Workflow
+1. Make changes to the code
+2. Run tests:
+   ```bash
+   python -m pytest
+   ```
+3. Format code:
+   ```bash
+   black .
+   ```
+4. Check types:
+   ```bash
+   mypy .
+   ```
+
+## Service Endpoints
+- Localstack: http://localhost:4566
+- MinIO Console: http://localhost:9001
+- Trino: http://localhost:8080
+
+## Common Issues
+1. Localstack not starting:
+   - Check if Docker is running
+   - Verify port 4566 is not in use
+   - Try `docker-compose down` and restart
+
+2. Terraform errors:
+   - Run `terragrunt init` again
+   - Check AWS credentials in Localstack
+   - Verify network connectivity
+
+3. Python package issues:
+   - Recreate virtual environment
+   - Update pip: `pip install --upgrade pip`
+   - Check Python version compatibility 
+
+## Monitoring and Logs
+1. View Lambda logs:
+   ```bash
+   aws --endpoint-url=http://localhost:4566 logs get-log-events --log-group-name /aws/lambda/data-processor
+   ```
+
+2. View mock generator logs:
+   ```bash
+   tail -f logs/mock_generator.log
+   ```
+
+## Coding Guidelines
+### Python
+- Use snake_case for variable and function names and just in general
+- Functions have nicely outlined docstring with proper capitalization and punctuation and include the function outputs
+- All other line items are lowercase and no spacing between #comment <- like that
 
 ## Overview
 This project implements a high-performance data pipeline for processing and storing event data using Apache Iceberg tables. The pipeline consists of a mock data generator and a Lambda-based processor that handles event ingestion and storage.
@@ -201,11 +289,6 @@ The script will:
    ```bash
    docker-compose up -d mock_generator
    ```
-
-## Service Endpoints
-- LocalStack: http://localhost:4566
-- MinIO Console: http://localhost:9001
-- Trino: http://localhost:8080
 
 ## Development Workflow
 
@@ -415,23 +498,23 @@ This guide outlines a comprehensive 5-month roadmap for building a local data pi
 
 ## Detailed Timeline
 
-### **Month 1: Environment Setup & Infrastructure Provisioning**
-- **Week 1: Project Initialization**
-  - Initialize a monorepo with Git and define the project directory structure for Terraform, Python apps, Dockerfiles, and transformation scripts.
+### **Month 1: Environment Setup & Infrastructure Provisioning** ✓
+- **Week 1: Project Initialization** ✓
+  - Initialize a monorepo with Git and define the project directory structure for Terraform, Python apps, Dockerfiles, and transformation scripts ✓
   
-- **Week 2: Local AWS Emulation & Networking**
-  - Install and configure Localstack to emulate AWS services (S3, Lambda).
-  - Set up Terraform modules to provision network resources: VPCs, subnets, and routing tables.
-  - Start building Terragrunt configurations to manage environments and infrastructure as code.
+- **Week 2: Local AWS Emulation & Networking** ✓
+  - Install and configure Localstack to emulate AWS services (S3, Lambda) ✓
+  - Set up Terraform modules to provision network resources: VPCs, subnets, and routing tables ✓
+  - Start building Terragrunt configurations to manage environments and infrastructure as code ✓
 
-- **Week 3: Infrastructure Deployment**
-  - Deploy network resources (VPC, subnets) and AWS resources (S3 bucket, Lambda function) using Terraform/Terragrunt.
-  - Validate network connectivity and resource accessibility within Localstack.
+- **Week 3: Infrastructure Deployment** ✓
+  - Deploy network resources (VPC, subnets) and AWS resources (S3 bucket, Lambda function) using Terraform/Terragrunt ✓
+  - Validate network connectivity and resource accessibility within Localstack ✓
 
-- **Week 4: Mock API Data Generator & Lambda Prototype**
-  - Develop a Python application to generate and send mock API events.
-  - Create a prototype Python Lambda function that processes API events and writes Parquet files to S3.
-  - Test the end-to-end data ingestion process locally.
+- **Week 4: Mock API Data Generator & Lambda Prototype** ✓
+  - Develop a Python application to generate and send mock API events ✓
+  - Create a prototype Python Lambda function that processes API events and writes Parquet files to S3 ✓
+  - Test the end-to-end data ingestion process locally ✓
 
 ### **Month 2: Building the Core Data Pipeline**
 - **Week 5: Enhance Data Ingestion**
@@ -566,85 +649,28 @@ This guide outlines a comprehensive 5-month roadmap for building a local data pi
    terragrunt apply -auto-approve
    ```
 
-4. Run the mock generator:
+4. Run the test suite:
    ```bash
+   # Run all tests
+   python -m pytest
+
+   # Run specific test categories
+   python -m pytest tests/unit -v      # Unit tests only
+   python -m pytest tests/integration   # Integration tests only
+   python -m pytest -m benchmark       # Performance benchmarks only
+   ```
+
+5. Start the mock event generator:
+   ```bash
+   # Make the script executable
+   chmod +x scripts/run_mock_generator.sh
+   
+   # Run the generator
    ./scripts/run_mock_generator.sh
    ```
 
+   The mock generator will start producing events and logs will be written to `logs/mock_generator.log`
+
 ## Infrastructure Setup
 1. Initialize Terraform:
-   ```bash
-   cd infrastructure/environments/dev
-   terragrunt init
    ```
-2. Plan and apply infrastructure:
-   ```bash
-   terragrunt plan
-   terragrunt apply
-   ```
-
-## Development Workflow
-1. Make changes to the code
-2. Run tests:
-   ```bash
-   python -m pytest
-   ```
-3. Format code:
-   ```bash
-   black .
-   ```
-4. Check types:
-   ```bash
-   mypy .
-   ```
-
-## Project Structure
-- `infrastructure/`: Terraform and Terragrunt configurations
-- `apps/`: Python applications
-  - `lambda_processor/`: Lambda function for processing events
-  - `mock_generator/`: Mock event generator
-- `docker/`: Docker configurations
-- `scripts/`: Utility scripts
-- `tests/`: Test suite
-  - `unit/`: Unit tests
-  - `integration/`: Integration tests
-  - `performance/`: Performance tests
-
-## Service Endpoints
-- Localstack: http://localhost:4566
-- MinIO Console: http://localhost:9001
-- Trino: http://localhost:8080
-
-## Common Issues
-1. Localstack not starting:
-   - Check if Docker is running
-   - Verify port 4566 is not in use
-   - Try `docker-compose down` and restart
-
-2. Terraform errors:
-   - Run `terragrunt init` again
-   - Check AWS credentials in Localstack
-   - Verify network connectivity
-
-3. Python package issues:
-   - Recreate virtual environment
-   - Update pip: `pip install --upgrade pip`
-   - Check Python version compatibility 
-
-## Monitoring and Logs
-1. View Lambda logs:
-   ```bash
-   aws --endpoint-url=http://localhost:4566 logs get-log-events --log-group-name /aws/lambda/data-processor
-   ```
-
-2. View mock generator logs:
-   ```bash
-   tail -f logs/mock_generator.log
-   ```
-
-# Coding Guidelines
-## Python
-- Use snake_case for variable and function names and just in general
-- Functions have nicely outlined docstring with proper capitalization and punctuation and include the function outputs
-- All other line items are lowercase and no spacing between #comment <- like that
-
