@@ -5,13 +5,25 @@ import io
 import concurrent.futures
 import psutil
 import os
-from apps.lambda.data_processor import (
+from unittest.mock import patch, MagicMock
+from apps.lambda_processor.data_processor import (
     flatten_nested_dict,
     process_event,
-    write_to_s3,
+    write_to_iceberg,
     lambda_handler,
-    compress_data
+    compress_data,
+    get_catalog
 )
+
+@pytest.fixture(autouse=True)
+def mock_catalog():
+    """Mock Iceberg catalog for all tests."""
+    with patch('apps.lambda_processor.data_processor.get_catalog') as mock_get_catalog:
+        mock_catalog = MagicMock()
+        mock_table = MagicMock()
+        mock_catalog.load_table.return_value = mock_table
+        mock_get_catalog.return_value = mock_catalog
+        yield mock_catalog
 
 def test_flatten_nested_dict():
     """Test flattening of nested dictionaries."""
@@ -103,16 +115,17 @@ def test_lambda_handler_error(sample_event, mock_context):
     assert response["statusCode"] == 500
     assert "error" in response["body"]
 
-def test_write_to_s3(s3, sample_event):
-    """Test S3 write functionality."""
+def test_write_to_iceberg(mock_catalog, sample_event):
+    """Test Iceberg write functionality."""
     df = process_event(sample_event)
-    key = "test/test.parquet"
+    event_type = sample_event["event_type"]
     
-    write_to_s3(df, "data-pipeline-bucket", key)
+    write_to_iceberg(df, event_type)
     
-    # Verify file exists in S3
-    response = s3.list_objects_v2(Bucket="data-pipeline-bucket")
-    assert any(obj["Key"] == key for obj in response.get("Contents", []))
+    # Verify write was called
+    mock_catalog.load_table.assert_called_once_with(f"events_{event_type}")
+    mock_table = mock_catalog.load_table.return_value
+    mock_table.append.assert_called_once()
 
 def test_data_integrity(sample_event):
     """Test data integrity through processing pipeline."""
@@ -188,32 +201,25 @@ def test_memory_efficiency(benchmark, sample_event):
 
 @pytest.mark.benchmark
 def test_compression_performance(benchmark, sample_event):
-    """Test compression performance for large batches of data."""
+    """Test compression performance."""
     def compress_batch():
-        # Process and compress 100 events
-        data = []
-        for _ in range(100):
-            df = process_event(sample_event)
-            data.append(df)
+        # Process 100 events
+        df = pl.concat([process_event(sample_event) for _ in range(100)])
         
-        # Combine all data
-        combined_df = pl.concat(data)
-        
-        # Convert to bytes
+        # Write to bytes buffer
         buffer = io.BytesIO()
-        combined_df.write_parquet(buffer)
-        data_bytes = buffer.getvalue()
+        df.write_parquet(buffer)
+        data = buffer.getvalue()
         
-        # Compress
-        return compress_data(data_bytes)
+        # Compress the data
+        compressed = compress_data(data)
+        
+        # Calculate compression ratio
+        compression_ratio = len(data) / len(compressed)
+        assert compression_ratio >= 2.0, f"Compression ratio {compression_ratio:.2f} is below required threshold"
+        
+        return compressed
     
     # Benchmark compression
     result = benchmark(compress_batch)
-    
-    # Calculate compression ratio
-    original_size = len(pl.concat([process_event(sample_event) for _ in range(100)]).write_parquet())
-    compressed_size = len(result)
-    compression_ratio = original_size / compressed_size
-    
-    # Assert good compression ratio (at least 2:1)
-    assert compression_ratio >= 2, f"Compression ratio {compression_ratio:.2f} is below required threshold" 
+    assert isinstance(result, bytes) 

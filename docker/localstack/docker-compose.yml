@@ -9,10 +9,33 @@ services:
     environment:
       - DEBUG=1
       - DOCKER_HOST=unix:///var/run/docker.sock
-      - SERVICES=s3,lambda
+      - SERVICES=s3,glue,iam,sts,lambda
+      - PERSISTENCE=1
+      - LAMBDA_EXECUTOR=docker
+      - LAMBDA_DOCKER_NETWORK=localstack
+      - S3_PROVIDER=localstack
+      - S3_FORCE_PATH_STYLE=true
+      - GLUE_PROPAGATE_TAGS=true
+      - GLUE_ENABLE_PARTITION_INDEX=true
       - AWS_DEFAULT_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
+      - EDGE_PORT=4566
+      - HOST_TMP_FOLDER=${TMPDIR:-/tmp}/localstack
     volumes:
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock" 
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - localstack
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  localstack_data:
+
+networks:
+  localstack:
+    name: localstack 

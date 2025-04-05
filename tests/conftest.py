@@ -4,7 +4,7 @@ import random
 import datetime
 from typing import Dict, Any
 import boto3
-from moto import mock_s3, mock_lambda
+from moto import mock_aws
 import os
 
 @pytest.fixture
@@ -18,7 +18,7 @@ def sample_event() -> Dict[str, Any]:
         "event_id": "123456",
         "event_type": "user_login",
         "user_id": "user_1",
-        "timestamp": datetime.datetime.now().isoformat(),
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
         "metadata": {
             "browser": "chrome",
             "os": "windows",
@@ -79,7 +79,7 @@ def aws_credentials():
 @pytest.fixture
 def s3(aws_credentials):
     """Mocked S3 client."""
-    with mock_s3():
+    with mock_aws():
         s3 = boto3.client('s3', region_name='us-east-1')
         s3.create_bucket(Bucket='data-pipeline-bucket')
         yield s3
@@ -87,7 +87,7 @@ def s3(aws_credentials):
 @pytest.fixture
 def lambda_client(aws_credentials):
     """Mocked Lambda client."""
-    with mock_lambda():
+    with mock_aws():
         lambda_client = boto3.client('lambda', region_name='us-east-1')
         yield lambda_client
 

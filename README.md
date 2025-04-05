@@ -1,5 +1,58 @@
 # Data Pipeline Project
 
+## Quick Start
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd data-pipeline
+   ```
+
+2. Set up Python virtual environment and install dependencies:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+3. Install Terragrunt:
+   ```bash
+   # On macOS (using Homebrew)
+   brew install terragrunt
+
+   # On Linux
+   curl -L https://github.com/gruntwork-io/terragrunt/releases/download/v0.54.11/terragrunt_linux_amd64 -o terragrunt
+   chmod +x terragrunt
+   sudo mv terragrunt /usr/local/bin/
+
+   # On Windows (using Chocolatey)
+   choco install terragrunt
+   ```
+
+4. Start Localstack and required services:
+   ```bash
+   docker-compose -f docker/localstack/docker-compose.yml up -d
+   ```
+
+5. Verify Localstack is running:
+   ```bash
+   aws --endpoint-url=http://localhost:4566 s3 ls
+   ```
+
+6. Initialize and apply infrastructure:
+   ```bash
+   cd infrastructure/environments/dev
+   terragrunt init
+   terragrunt apply -auto-approve
+   ```
+
+7. Run the mock generator:
+   ```bash
+   ./scripts/run_mock_generator.sh
+   ```
+
+For detailed instructions and troubleshooting, see the sections below.
+
 ## Overview
 This project implements a high-performance data pipeline for processing and storing event data using Apache Iceberg tables. The pipeline consists of a mock data generator and a Lambda-based processor that handles event ingestion and storage.
 
@@ -54,30 +107,68 @@ This project implements a high-performance data pipeline for processing and stor
   - Standardized event types
   - Rich metadata for analytics
 
-## Implementation Notes
+## Testing Strategy
 
-### Performance Requirements
-- Process 100+ events per second
-- Support concurrent processing
-- Memory efficient (max 50MB per 100 events)
-- Compression ratio of at least 2:1
+### Test Categories
+1. **Unit Tests**
+   - Test individual components in isolation
+   - Fast execution
+   - No external dependencies
+   - Marked with `@pytest.mark.unit`
 
-### Testing Strategy
-- Unit tests for all components
-- Performance benchmarks
-- Memory usage monitoring
-- Compression ratio validation
-- Concurrent processing tests
+2. **Integration Tests**
+   - Test component interactions
+   - Verify service connectivity
+   - Marked with `@pytest.mark.integration`
+
+3. **Benchmark Tests**
+   - Measure performance metrics
+   - Validate throughput requirements
+   - Marked with `@pytest.mark.benchmark`
+
+### Test Requirements
+- All tests must pass before service startup
+- Tests run in both local and container environments
+- Performance benchmarks must meet requirements:
+  - 100+ events/second processing
+  - < 50MB memory usage per 100 events
+  - 2:1 compression ratio
 
 ## Setup Instructions
 
 ### Prerequisites
+- Docker and Docker Compose
 - Python 3.9+
-- Docker
-- Localstack
-- AWS CLI configured for Localstack
+- AWS CLI (for Localstack)
+- Git
+- Terraform 1.0+
+- Terragrunt
 
-### Environment Setup
+### Quick Start
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd data-pipeline
+   ```
+
+2. Make the run script executable:
+   ```bash
+   chmod +x scripts/run.sh
+   ```
+
+3. Run the environment:
+   ```bash
+   ./scripts/run.sh
+   ```
+
+The script will:
+- Start Localstack
+- Initialize Terraform resources
+- Run all tests
+- Start required services
+- Start the mock generator
+
+### Manual Setup
 1. Create and activate virtual environment:
    ```bash
    python -m venv venv
@@ -89,48 +180,57 @@ This project implements a high-performance data pipeline for processing and stor
    pip install -r requirements.txt
    ```
 
-### Localstack Setup
-1. Start Localstack:
+3. Start Localstack:
    ```bash
    docker-compose -f docker/localstack/docker-compose.yml up -d
    ```
 
-2. Verify Localstack:
+4. Initialize and apply Terraform:
    ```bash
-   aws --endpoint-url=http://localhost:4566 s3 ls
+   cd infrastructure/environments/dev
+   terragrunt init
+   terragrunt apply
    ```
 
-### Iceberg Setup
-1. Create Iceberg catalog:
+5. Run tests:
    ```bash
-   aws --endpoint-url=http://localhost:4566 glue create-database --database-name events_db
+   python -m pytest tests/unit -v
    ```
 
-2. Initialize Iceberg tables:
+6. Start mock generator:
    ```bash
-   python scripts/init_iceberg_tables.py
+   docker-compose up -d mock_generator
    ```
 
-## Running the Pipeline
+## Service Endpoints
+- LocalStack: http://localhost:4566
+- MinIO Console: http://localhost:9001
+- Trino: http://localhost:8080
 
-### Start Mock Generator
+## Development Workflow
+
+### Running Tests
 ```bash
-python apps/mock_generator/main.py
+# Run all tests
+python -m pytest tests -v
+
+# Run specific test category
+python -m pytest tests -m unit
+python -m pytest tests -m integration
+python -m pytest tests -m benchmark
 ```
 
-### Monitor Processing
+### Code Formatting
 ```bash
-python scripts/monitor_processing.py
+black .
 ```
 
-## Development
-
-### Testing
+### Type Checking
 ```bash
-python -m pytest
+mypy .
 ```
 
-## Performance Monitoring
+## Monitoring
 
 ### Metrics
 - Events processed per second
@@ -138,28 +238,57 @@ python -m pytest
 - Compression ratios
 - Processing latency
 
-### Monitoring Tools
-- Localstack CloudWatch metrics
-- Custom performance dashboards
-- Iceberg table statistics
+### Logs
+```bash
+# View all logs
+docker-compose logs -f
+
+# View specific service logs
+docker-compose logs -f mock_generator
+docker-compose logs -f localstack
+```
 
 ## Troubleshooting
 
 ### Common Issues
-1. Localstack not starting
-   - Check Docker status
+1. **Tests Failing**
+   - Check test logs for specific failures
+   - Verify all dependencies are installed
+   - Ensure environment variables are set correctly
+
+2. **Service Startup Issues**
+   - Check Docker logs
    - Verify port availability
-   - Check Localstack logs
+   - Check service dependencies
 
-2. Iceberg table issues
-   - Verify catalog configuration
-   - Check table metadata
-   - Monitor compaction status
+3. **Terraform/Localstack Issues**
+   - Verify Localstack is running and healthy
+   - Check Terraform state and logs
+   - Ensure AWS credentials are properly configured for Localstack
 
-3. Performance issues
-   - Check memory usage
-   - Monitor concurrent processing
+4. **Performance Issues**
+   - Monitor resource usage
+   - Check event processing rates
    - Verify compression ratios
+
+### Debugging
+1. **Local Development**
+   ```bash
+   # Run tests with debug output
+   python -m pytest tests -v --pdb
+   
+   # View service logs
+   docker-compose logs -f
+   ```
+
+2. **Container Debugging**
+   ```bash
+   # Access container shell
+   docker-compose exec mock_generator bash
+   
+   # View container logs
+   docker-compose logs mock_generator
+   ```
 
 ## Future Improvements
 1. Implement CDC (Change Data Capture)
@@ -379,4 +508,143 @@ This guide outlines a comprehensive 5-month roadmap for building a local data pi
 ## Architecture Diagram
 
 <img width="760" alt="image" src="https://github.com/user-attachments/assets/17a4e790-f844-4efa-95fc-c07de9f5cc03" />
+
+# Data Pipeline Project Setup Instructions
+
+## Initial Setup
+1. Clone the repository
+2. Create and activate Python virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## Running Tests
+1. Run all tests:
+   ```bash
+   python -m pytest tests -v
+   ```
+
+2. Run specific test categories:
+   ```bash
+   # Unit tests only
+   python -m pytest tests/unit -v
+   
+   # Integration tests only
+   python -m pytest tests/integration -v
+   
+   # Performance benchmarks
+   python -m pytest tests -v -m benchmark
+   ```
+
+3. Test Requirements:
+   - All tests must pass before starting services
+   - Performance benchmarks must meet:
+     - Processing rate: >100 events/second
+     - Memory usage: <50MB per 100 events
+     - Compression ratio: ≥2:1
+
+## Starting the Pipeline
+1. Start Localstack and required services:
+   ```bash
+   docker-compose -f docker/localstack/docker-compose.yml up -d
+   ```
+
+2. Verify Localstack is running:
+   ```bash
+   aws --endpoint-url=http://localhost:4566 s3 ls
+   ```
+
+3. Initialize and apply infrastructure:
+   ```bash
+   cd infrastructure/environments/dev
+   terragrunt init
+   terragrunt apply -auto-approve
+   ```
+
+4. Run the mock generator:
+   ```bash
+   ./scripts/run_mock_generator.sh
+   ```
+
+## Infrastructure Setup
+1. Initialize Terraform:
+   ```bash
+   cd infrastructure/environments/dev
+   terragrunt init
+   ```
+2. Plan and apply infrastructure:
+   ```bash
+   terragrunt plan
+   terragrunt apply
+   ```
+
+## Development Workflow
+1. Make changes to the code
+2. Run tests:
+   ```bash
+   python -m pytest
+   ```
+3. Format code:
+   ```bash
+   black .
+   ```
+4. Check types:
+   ```bash
+   mypy .
+   ```
+
+## Project Structure
+- `infrastructure/`: Terraform and Terragrunt configurations
+- `apps/`: Python applications
+  - `lambda_processor/`: Lambda function for processing events
+  - `mock_generator/`: Mock event generator
+- `docker/`: Docker configurations
+- `scripts/`: Utility scripts
+- `tests/`: Test suite
+  - `unit/`: Unit tests
+  - `integration/`: Integration tests
+  - `performance/`: Performance tests
+
+## Service Endpoints
+- Localstack: http://localhost:4566
+- MinIO Console: http://localhost:9001
+- Trino: http://localhost:8080
+
+## Common Issues
+1. Localstack not starting:
+   - Check if Docker is running
+   - Verify port 4566 is not in use
+   - Try `docker-compose down` and restart
+
+2. Terraform errors:
+   - Run `terragrunt init` again
+   - Check AWS credentials in Localstack
+   - Verify network connectivity
+
+3. Python package issues:
+   - Recreate virtual environment
+   - Update pip: `pip install --upgrade pip`
+   - Check Python version compatibility 
+
+## Monitoring and Logs
+1. View Lambda logs:
+   ```bash
+   aws --endpoint-url=http://localhost:4566 logs get-log-events --log-group-name /aws/lambda/data-processor
+   ```
+
+2. View mock generator logs:
+   ```bash
+   tail -f logs/mock_generator.log
+   ```
+
+# Coding Guidelines
+## Python
+- Use snake_case for variable and function names and just in general
+- Functions have nicely outlined docstring with proper capitalization and punctuation and include the function outputs
+- All other line items are lowercase and no spacing between #comment <- like that
 

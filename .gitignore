@@ -19,45 +19,56 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-venv/
-.env
-.venv
-env/
-ENV/
 
-# Terraform
-.terraform/
-*.tfstate
-*.tfstate.*
-crash.log
-crash.*.log
-*.tfvars
-override.tf
-override.tf.json
-*_override.tf
-*_override.tf.json
-.terraformrc
-terraform.rc
+# Virtual Environment
+venv/
+ENV/
+env/
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-.DS_Store
-.cursor/
+
+# Terraform & Terragrunt
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+.terragrunt-cache/
+terraform.tfvars
+*.tfvars.json
+.terraform.lock.hcl
 
 # Localstack
-docker/localstack/volume/
+.localstack/
+volume/
 
 # Logs
-*.log
 logs/
+*.log
 
-# Test coverage
+# Testing
 .coverage
-htmlcov/
 .pytest_cache/
+htmlcov/
+.tox/
+.coverage.*
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Environment variables
+.env
+.env.*
+
+# Mac OS
+.DS_Store
+
+# Project specific
+data/
+tmp/
 
 # Jupyter Notebook
 .ipynb_checkpoints

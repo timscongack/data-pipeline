@@ -6,11 +6,17 @@ import traceback
 import polars as pl
 from datetime import datetime
 from typing import Dict, Any, Optional
-from pyiceberg.catalog import GlueCatalog
+from pyiceberg.catalog import load_catalog
 from pyiceberg.table import Table
 
-# Initialize catalog
-catalog = GlueCatalog("events_db")
+_catalog = None
+
+def get_catalog():
+    """Get or initialize the catalog."""
+    global _catalog
+    if _catalog is None:
+        _catalog = load_catalog("glue", warehouse="s3://iceberg-data/warehouse")
+    return _catalog
 
 def log_error(
     error_type: str,
@@ -39,7 +45,7 @@ def log_error(
         df = pl.DataFrame([error_data])
         
         # Write to error_logs table
-        table = catalog.load_table("error_logs")
+        table = get_catalog().load_table("error_logs")
         table.append(df.to_arrow())
         
     except Exception as e:
@@ -83,8 +89,13 @@ def process_event(event: Dict[str, Any]) -> pl.DataFrame:
         
         # Ensure timestamp is in correct format
         df = df.with_columns(
-            pl.col("timestamp").str.strptime(pl.Datetime, "%Y-%m-%dT%H:%M:%S.%fZ")
+            pl.col("timestamp").str.strptime(pl.Datetime, "%Y-%m-%dT%H:%M:%S%.fZ")
         )
+        
+        # Rename columns to remove leading underscore from _doc
+        for col in df.columns:
+            if col.startswith("_doc_"):
+                df = df.rename({col: col[1:]})
         
         return df
     except Exception as e:
@@ -103,7 +114,7 @@ def write_to_iceberg(df: pl.DataFrame, event_type: str) -> None:
     try:
         # Get the appropriate table
         table_name = f"events_{event_type}"
-        table = catalog.load_table(table_name)
+        table = get_catalog().load_table(table_name)
         
         # Convert to PyArrow table
         arrow_table = df.to_arrow()
@@ -147,11 +158,15 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         event_type = event["event_type"]
         write_to_iceberg(df, event_type)
         
+        # Generate S3 key for the event
+        s3_key = f"events/{event_type}/{datetime.utcnow().strftime('%Y/%m/%d')}/{event['event_id']}.parquet"
+        
         return {
             "statusCode": 200,
             "body": json.dumps({
                 "event_id": event["event_id"],
                 "status": "success",
+                "s3_key": s3_key,
                 "timestamp": datetime.utcnow().isoformat()
             })
         }

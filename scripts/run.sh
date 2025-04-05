@@ -5,6 +5,16 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Function to run tests
+run_tests() {
+    echo "Running tests..."
+    if ! python -m pytest tests/unit -v; then
+        echo "Tests failed. Exiting."
+        exit 1
+    fi
+    echo "All tests passed."
+}
+
 # Check for required commands
 for cmd in docker docker-compose python; do
     if ! command_exists $cmd; then
@@ -12,6 +22,9 @@ for cmd in docker docker-compose python; do
         exit 1
     fi
 done
+
+# Run tests before starting services
+run_tests
 
 # Create necessary directories
 mkdir -p docker/trino/catalog
