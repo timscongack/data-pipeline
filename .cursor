@@ -1,0 +1,83 @@
+# Data Pipeline Project Setup Instructions
+
+## Initial Setup
+1. Clone the repository
+2. Create and activate Python virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## Localstack Setup
+1. Start Localstack:
+   ```bash
+   docker-compose -f docker/localstack/docker-compose.yml up -d
+   ```
+2. Verify Localstack is running:
+   ```bash
+   aws --endpoint-url=http://localhost:4566 s3 ls
+   ```
+
+## Infrastructure Setup
+1. Initialize Terraform:
+   ```bash
+   cd infrastructure/environments/dev
+   terragrunt init
+   ```
+2. Plan and apply infrastructure:
+   ```bash
+   terragrunt plan
+   terragrunt apply
+   ```
+
+## Running the Mock Generator
+1. From the project root:
+   ```bash
+   python apps/mock-generator/main.py
+   ```
+
+## Development Workflow
+1. Make changes to the code
+2. Run tests:
+   ```bash
+   python -m pytest
+   ```
+3. Format code:
+   ```bash
+   black .
+   ```
+4. Check types:
+   ```bash
+   mypy .
+   ```
+
+## Project Structure
+- `infrastructure/`: Terraform and Terragrunt configurations
+- `apps/`: Python applications
+- `docker/`: Docker configurations
+- `scripts/`: Utility scripts
+
+## Common Issues
+1. Localstack not starting:
+   - Check if Docker is running
+   - Verify port 4566 is not in use
+   - Try `docker-compose down` and restart
+
+2. Terraform errors:
+   - Run `terragrunt init` again
+   - Check AWS credentials in Localstack
+   - Verify network connectivity
+
+3. Python package issues:
+   - Recreate virtual environment
+   - Update pip: `pip install --upgrade pip`
+   - Check Python version compatibility 
+
+# Coding Guidelines
+## Python
+- Use snake_case for variable and function names and just in general
+- detailed docstrings for functions, terse code comment on the same line after code all lowercase no space after #.

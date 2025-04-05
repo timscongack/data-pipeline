@@ -1,3 +1,90 @@
+# Data Pipeline Project
+
+A comprehensive data pipeline solution using AWS services (emulated with Localstack), Terraform, and Python.
+
+## Project Structure
+
+```
+.
+├── README.md
+├── infrastructure/           # Terraform and Terragrunt configurations
+│   ├── modules/             # Reusable Terraform modules
+│   │   ├── networking/      # VPC, subnets, routing tables
+│   │   ├── storage/         # S3 buckets
+│   │   └── compute/         # Lambda functions
+│   └── environments/        # Environment-specific configurations
+│       ├── dev/             # Development environment
+│       └── prod/            # Production environment
+├── apps/                    # Python applications
+│   ├── mock-generator/      # Mock API data generator
+│   └── lambda/              # Lambda function code
+├── docker/                  # Docker-related files
+│   ├── localstack/          # Localstack configuration
+│   └── apps/                # Application Dockerfiles
+└── scripts/                 # Utility and transformation scripts
+    └── data/                # Data transformation scripts
+```
+
+## Prerequisites
+
+- Python 3.9+
+- Docker and Docker Compose
+- Terraform 1.0+
+- Terragrunt
+- AWS CLI (for local development)
+- Localstack
+
+## Getting Started
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd data-pipeline
+   ```
+
+2. Set up Python virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+3. Start Localstack:
+   ```bash
+   docker-compose -f docker/localstack/docker-compose.yml up -d
+   ```
+
+4. Initialize Terraform:
+   ```bash
+   cd infrastructure/environments/dev
+   terragrunt init
+   ```
+
+## Development Workflow
+
+1. **Infrastructure Development**
+   - Create/modify Terraform modules in `infrastructure/modules/`
+   - Update environment configurations in `infrastructure/environments/`
+
+2. **Application Development**
+   - Develop mock data generator in `apps/mock-generator/`
+   - Implement Lambda functions in `apps/lambda/`
+
+3. **Testing**
+   - Run unit tests: `python -m pytest`
+   - Test infrastructure changes: `terragrunt plan`
+   - Test end-to-end flow with Localstack
+
+## Contributing
+
+1. Create a feature branch
+2. Make your changes
+3. Submit a pull request
+
+## License
+
+[Add your license information here]
+
 # Local Data Pipeline Project Guide
 
 This guide outlines a comprehensive 5-month roadmap for building a local data pipeline project. The project will emulate AWS resources (using Localstack) including network resources (VPCs, subnets, routing), ingest mock API events via a Python Lambda function, and process data through layered storage (raw in PostgreSQL, silver for transformed data, and gold in DuckDB for analytics). The system will be containerized using Docker/Docker Compose, include CI/CD for automated deployments, support multi-developer collaboration, and integrate a lightweight dashboarding tool (such as [Streamlit](https://streamlit.io)) for analytics visualization.
