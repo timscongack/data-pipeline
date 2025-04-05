@@ -62,17 +62,60 @@
 
 8. Start the mock event generator:
    ```bash
+   # Make sure you're in the project root directory
+   cd /path/to/data-pipeline
+
    # Make sure your virtual environment is activated
    source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-   # Make the script executable
+   # Start Localstack if it's not running
+   docker-compose -f docker/localstack/docker-compose.yml up -d
+
+   # Wait a few seconds for Localstack to start
+   sleep 5
+
+   # Initialize and apply infrastructure (this creates the required S3 bucket)
+   cd infrastructure/environments/dev
+   terragrunt init
+   terragrunt apply -auto-approve
+   cd ../../..  # Return to project root
+
+   # Verify Localstack and S3 bucket are available
+   aws --endpoint-url=http://localhost:4566 s3 ls
+   # You should see 'data-pipeline-dev' in the output
+
+   # Make the script executable (only needed once)
    chmod +x scripts/run_mock_generator.sh
    
-   # Run the generator
+   # Run the generator (this will also run unit tests and create required directories)
    ./scripts/run_mock_generator.sh
    ```
 
-   The mock generator will start producing events and logs will be written to `logs/mock_generator.log`
+   The mock generator will:
+   - Check if Localstack is running
+   - Check if required S3 bucket exists
+   - Run unit tests to verify everything is working
+   - Create required directories (logs/)
+   - Start generating events
+   - Write logs to `logs/mock_generator.log`
+
+   You can monitor the logs in real-time with:
+   ```bash
+   tail -f logs/mock_generator.log
+   ```
+
+   If you see an error like "Localstack is not running or S3 is not available", make sure to:
+   1. Start Localstack: `docker-compose -f docker/localstack/docker-compose.yml up -d`
+   2. Wait a few seconds for it to initialize
+   3. Run Terragrunt to create infrastructure: 
+      ```bash
+      cd infrastructure/environments/dev
+      terragrunt init
+      terragrunt apply -auto-approve
+      cd ../../..
+      ```
+   4. Verify the S3 bucket exists: `aws --endpoint-url=http://localhost:4566 s3 ls`
+   5. Try running the mock generator again
 
 For detailed instructions and troubleshooting, see the sections below.
 
@@ -517,7 +560,12 @@ This guide outlines a comprehensive 5-month roadmap for building a local data pi
   - Test the end-to-end data ingestion process locally ✓
 
 ### **Month 2: Building the Core Data Pipeline**
+
 - **Week 5: Enhance Data Ingestion**
+  - Additional todos
+    - Fix bug in the running the mock API data generator
+    - Re-run full build
+    - Put startup into a single bash script
   - Refine the Python Lambda to handle realistic event payloads and ensure proper serialization to Parquet.
   - Verify that data is correctly written to the emulated S3 bucket.
 
@@ -669,7 +717,31 @@ This guide outlines a comprehensive 5-month roadmap for building a local data pi
    ./scripts/run_mock_generator.sh
    ```
 
-   The mock generator will start producing events and logs will be written to `logs/mock_generator.log`
+   The mock generator will:
+   - Check if Localstack is running
+   - Check if required S3 bucket exists
+   - Run unit tests to verify everything is working
+   - Create required directories (logs/)
+   - Start generating events
+   - Write logs to `logs/mock_generator.log`
+
+   You can monitor the logs in real-time with:
+   ```bash
+   tail -f logs/mock_generator.log
+   ```
+
+   If you see an error like "Localstack is not running or S3 is not available", make sure to:
+   1. Start Localstack: `docker-compose -f docker/localstack/docker-compose.yml up -d`
+   2. Wait a few seconds for it to initialize
+   3. Run Terragrunt to create infrastructure: 
+      ```bash
+      cd infrastructure/environments/dev
+      terragrunt init
+      terragrunt apply -auto-approve
+      cd ../../..
+      ```
+   4. Verify the S3 bucket exists: `aws --endpoint-url=http://localhost:4566 s3 ls`
+   5. Try running the mock generator again
 
 ## Infrastructure Setup
 1. Initialize Terraform:
