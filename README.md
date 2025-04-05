@@ -1,5 +1,14 @@
 # Data Pipeline Project
 
+A data pipeline that processes streaming events using AWS services (emulated locally with Localstack). The pipeline ingests events from a mock generator, processes them using AWS Lambda, and stores the data in Apache Iceberg tables on S3, enabling efficient querying and analytics. Later this project will be fully containerized, and include CI/CD, dbt, postgres for both storage and analytics, and a dashboarding tool for a comprehensive data pipeline solution.
+
+## Technologies
+- **Infrastructure**: Terraform, Terragrunt, Localstack
+- **Backend**: Python, AWS Lambda
+- **Storage**: AWS S3, Apache Iceberg
+- **Testing**: pytest, moto
+- **Development**: Docker, Make
+
 ## Quick Start
 
 1. Clone the repository:
@@ -423,10 +432,6 @@ docker-compose logs -f localstack
 4. Implement data quality checks
 5. Add support for more event types
 
-# Data Pipeline Project
-
-A comprehensive data pipeline solution using AWS services (emulated with Localstack), Terraform, and Python.
-
 ## Project Structure
 
 ```
@@ -512,7 +517,7 @@ A comprehensive data pipeline solution using AWS services (emulated with Localst
 
 # Local Data Pipeline Project Guide
 
-This guide outlines a comprehensive 5-month roadmap for building a local data pipeline project. The project will emulate AWS resources (using Localstack) including network resources (VPCs, subnets, routing), ingest mock API events via a Python Lambda function, and process data through layered storage (raw in PostgreSQL, silver for transformed data, and gold in DuckDB for analytics). The system will be containerized using Docker/Docker Compose, include CI/CD for automated deployments, support multi-developer collaboration, and integrate a lightweight dashboarding tool (such as [Streamlit](https://streamlit.io)) for analytics visualization.
+This guide outlines a comprehensive 5-month roadmap for building a local data pipeline project. The project will emulate AWS resources (using Localstack) including network resources (VPCs, subnets, routing), ingest mock API events via a Python Lambda function, and process data through layered storage (raw in PostgreSQL, silver for transformed data, and gold in also in Postgres for analytics). The system will be containerized using Docker/Docker Compose, include CI/CD for automated deployments, support multi-developer collaboration, and integrate a lightweight dashboarding tool (such as [Streamlit](https://streamlit.io)) for analytics visualization.
 
 ---
 
@@ -525,12 +530,12 @@ This guide outlines a comprehensive 5-month roadmap for building a local data pi
 - **Storage & Processing Layers:**
   - **Raw Layer:** PostgreSQL database that ingests Parquet files from the S3 bucket.
   - **Silver Layer:** Transformation scripts to unflatten and normalize the raw data into structured, cleaned tables.
-  - **Gold Layer:** A DuckDB instance connecting to PostgreSQL to execute analytical queries and generate summary reports.
+  - **Gold Layer:** PostgreSQL analytics schema for executing analytical queries and generating summary reports.
 
 - **Infrastructure:**
   - **AWS Resource Emulation:** Use Localstack to simulate AWS services (S3, Lambda).
   - **Networking:** Provision VPCs, subnets, and related network resources using Terraform/Terragrunt.
-  - **Containerization:** Docker and Docker Compose will be used to run Localstack, PostgreSQL, DuckDB, the Lambda function, and additional processing scripts.
+  - **Containerization:** Docker and Docker Compose will be used to run Localstack, PostgreSQL, the Lambda function, and additional processing scripts.
   - **CI/CD:** Implement a CI/CD pipeline (e.g., GitHub Actions, Jenkins) for automated testing, deployment, and multi-developer collaboration.
   - **Permissions & Multi-Developer Support:** Configure database roles and network permissions to allow secure, collaborative development.
 
@@ -582,17 +587,18 @@ This guide outlines a comprehensive 5-month roadmap for building a local data pi
   - Develop tests to validate the accuracy and consistency of the transformed data.
 
 ### **Month 3: Analytics, Integration, & CI/CD Initiation**
-- **Week 9: Gold Layer Implementation with DuckDB**
-  - Deploy a DuckDB instance in a container.
-  - Set up connections between DuckDB and PostgreSQL.
-  - Write initial analytical queries to aggregate data from the silver layer.
+- **Week 9: Analytics Layer Implementation**
+  - Configure PostgreSQL analytics schema
+  - Set up materialized views and analytical functions
+  - Write initial analytical queries to aggregate data from the silver layer
 
 - **Week 10: Develop Analytical Queries**
-  - Expand the suite of analytical queries for generating summary metrics and reports.
-  - Optimize query performance and validate results against the gold layer.
+  - Expand the suite of analytical queries for generating summary metrics and reports
+  - Optimize query performance using PostgreSQL features (partitioning, indexes)
+  - Validate results against the analytics schema
 
 - **Week 11: Docker Integration & Orchestration**
-  - Integrate all components (Localstack, PostgreSQL, DuckDB, Lambda function, and transformation scripts) using Docker Compose.
+  - Integrate all components (Localstack, PostgreSQL, Lambda function, and transformation scripts) using Docker Compose.
   - Conduct end-to-end integration tests to ensure seamless data flow and connectivity.
 
 - **Week 12: CI/CD Pipeline Setup**
@@ -601,8 +607,9 @@ This guide outlines a comprehensive 5-month roadmap for building a local data pi
 
 ### **Month 4: Dashboarding, Permissions, & Multi-Developer Support**
 - **Week 13: Dashboard Implementation**
-  - Integrate [Streamlit](https://streamlit.io) as the dashboarding tool.
-  - Develop initial interactive dashboards to visualize key analytics and summary data from DuckDB.
+  - Integrate [Streamlit](https://streamlit.io) as the dashboarding tool
+  - Develop initial interactive dashboards to visualize key analytics from PostgreSQL
+  - Implement efficient query caching and optimization for dashboard performance
 
 - **Week 14: Database Permissions & Virtualization**
   - Configure fine-grained database permissions and roles to support multiple developers.
